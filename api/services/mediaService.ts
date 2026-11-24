@@ -22,6 +22,7 @@ import {
   deleteMediaAssetRowIfUnreferenced,
   findMediaAsset,
   insertMediaAsset,
+  isWorldMediaVisible,
   listUnreferencedAssetsOlderThan,
   toMediaAssetDto,
 } from "../repositories/media";
@@ -66,6 +67,7 @@ function assertUploadRights(db: DbHandle, user: UserRow, input: UploadImageInput
     }
     return;
   }
+  if (input.purpose === "world") return;
   if (input.purpose !== "compendium" || input.compendiumId === undefined) {
     throw new TRPCError({
       code: "FORBIDDEN",
@@ -160,10 +162,14 @@ export interface BoardImageBytes {
 export async function readBoardImage(
   db: DbHandle,
   key: string,
+  user: UserRow,
 ): Promise<BoardImageBytes> {
   const parsed = mediaKeySchema.safeParse(key);
   if (!parsed.success) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid image key" });
+  }
+  if (!isWorldMediaVisible(db, key, user.id, user.gameRole === "master")) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
   }
   const row = findMediaAsset(db, key);
   if (!row) {
