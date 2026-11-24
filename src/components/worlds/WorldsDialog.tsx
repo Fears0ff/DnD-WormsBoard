@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   BookOpen, Check, ChevronRight, Globe2, Pencil,
   Plus, Search, Send, Settings, Shield, Trash2, Upload, X,
@@ -24,6 +24,7 @@ import { WorldEntityDialog } from "./WorldEntityDialog";
 import { WorldPermissionsDialog } from "./WorldPermissionsDialog";
 import { WorldWikiImportDialog } from "./WorldWikiImportDialog";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const WORLD_TYPE_LABELS: Record<WorldEntityType, string> = {
   territory: "Территория", region: "Регион", city: "Город", place: "Место",
   character: "Персонаж", faction: "Фракция", event: "Событие",
@@ -31,6 +32,7 @@ export const WORLD_TYPE_LABELS: Record<WorldEntityType, string> = {
 
 const STATUS_LABELS = { draft: "Черновик", review: "На ревью", rejected: "Отклонено", published: "Опубликовано" } as const;
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function invalidateWorlds(): void {
   void queryClient.invalidateQueries({ queryKey: [["worlds"]] });
 }
@@ -43,11 +45,9 @@ export function WorldsDialog({ open, onOpenChange, me }: { open: boolean; onOpen
   const [createOpen, setCreateOpen] = useState(false);
   const worlds = useMemo(() => worldsQuery.data ?? [], [worldsQuery.data]);
 
-  useEffect(() => {
-    if (open && worlds.length && !worlds.some((world) => world.id === selectedId)) {
-      setSelectedId(worlds[0].id);
-    }
-  }, [open, worlds, selectedId]);
+  const activeSelectedId = selectedId !== null && worlds.some((world) => world.id === selectedId)
+    ? selectedId
+    : open && worlds.length ? worlds[0].id : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,7 +77,7 @@ export function WorldsDialog({ open, onOpenChange, me }: { open: boolean; onOpen
               {!worldsQuery.isLoading && worlds.length === 0 ? <p className="p-2 text-xs text-muted-foreground">Миров пока нет.</p> : null}
             </ScrollArea>
           </aside>
-          {selectedId ? <WorldView key={selectedId} worldId={selectedId} me={me} /> : (
+          {activeSelectedId ? <WorldView key={activeSelectedId} worldId={activeSelectedId} me={me} /> : (
             <div className="flex items-center justify-center text-center text-sm text-muted-foreground">Выберите мир{me.gameRole === "master" ? " или создайте новый" : ""}.</div>
           )}
         </div>
@@ -123,11 +123,6 @@ function WorldView({ worldId, me }: { worldId: number; me: UserDto }) {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-
-  useEffect(() => { setSelectedEntityId(null); setTab("locations"); setSearch(""); }, [worldId]);
-  useEffect(() => {
-    if (snapshot && selectedEntityId && !snapshot.entities.some((entity) => entity.id === selectedEntityId)) setSelectedEntityId(null);
-  }, [snapshot, selectedEntityId]);
 
   if (snapshotQuery.isLoading) return <p className="p-6 text-sm text-muted-foreground">Загрузка мира…</p>;
   if (snapshotQuery.isError || !snapshot) return <div className="p-6 text-sm"><p className="text-destructive-foreground">{trpcErrorMessage(snapshotQuery.error, "Мир недоступен")}</p><Button variant="outline" size="sm" className="mt-3" onClick={() => void snapshotQuery.refetch()}>Повторить</Button></div>;
