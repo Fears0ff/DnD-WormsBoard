@@ -282,6 +282,101 @@ export const noteShares = sqliteTable(
   ],
 );
 
+export const worlds = sqliteTable(
+  "worlds",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    comment: text("comment").notNull().default(""),
+    chronologyName: text("chronology_name").notNull(),
+    zeroYearName: text("zero_year_name").notNull(),
+    isPrimary: integer("is_primary", { mode: "boolean" }).notNull().default(false),
+    createdBy: integer("created_by").notNull().references(() => users.id),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("worlds_single_primary").on(t.isPrimary).where(sql`${t.isPrimary} = 1`),
+    index("worlds_created_by_idx").on(t.createdBy),
+  ],
+);
+
+export const worldEntities = sqliteTable(
+  "world_entities",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    worldId: integer("world_id").notNull().references(() => worlds.id, { onDelete: "cascade" }),
+    type: text("type", {
+      enum: ["territory", "region", "city", "place", "character", "faction", "event"],
+    }).notNull(),
+    parentId: integer("parent_id"),
+    factionId: integer("faction_id"),
+    authorId: integer("author_id").notNull().references(() => users.id),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    race: text("race").notNull().default(""),
+    role: text("role").notNull().default(""),
+    statusText: text("status_text").notNull().default(""),
+    day: text("day").notNull().default(""),
+    month: text("month").notNull().default(""),
+    year: text("year").notNull().default(""),
+    era: text("era", { enum: ["before", "after"] }).notNull().default("after"),
+    imageKey: text("image_key").references(() => mediaAssets.key, { onDelete: "set null" }),
+    reviewStatus: text("review_status", { enum: ["draft", "review", "rejected", "published"] })
+      .notNull().default("draft"),
+    visibility: text("visibility", { enum: ["all", "master"] }).notNull().default("all"),
+    reviewComment: text("review_comment").notNull().default(""),
+    draftOfId: integer("draft_of_id"),
+    version: integer("version").notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("world_entities_world_type_idx").on(t.worldId, t.type),
+    index("world_entities_parent_idx").on(t.parentId),
+    index("world_entities_author_idx").on(t.authorId),
+    index("world_entities_review_idx").on(t.reviewStatus),
+    index("world_entities_draft_of_idx").on(t.draftOfId),
+  ],
+);
+
+export const worldEntityMaps = sqliteTable(
+  "world_entity_maps",
+  {
+    entityId: integer("entity_id").notNull().references(() => worldEntities.id, { onDelete: "cascade" }),
+    imageKey: text("image_key").notNull().references(() => mediaAssets.key),
+    position: integer("position").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.entityId, t.imageKey] }), index("world_maps_image_idx").on(t.imageKey)],
+);
+
+export const worldEventCharacters = sqliteTable(
+  "world_event_characters",
+  {
+    eventId: integer("event_id").notNull().references(() => worldEntities.id, { onDelete: "cascade" }),
+    characterId: integer("character_id").notNull().references(() => worldEntities.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.eventId, t.characterId] }), index("world_event_character_idx").on(t.characterId)],
+);
+
+export const worldPermissions = sqliteTable(
+  "world_permissions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    worldId: integer("world_id").notNull().references(() => worlds.id, { onDelete: "cascade" }),
+    entityId: integer("entity_id").references(() => worldEntities.id, { onDelete: "cascade" }),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    canAdd: integer("can_add", { mode: "boolean" }).notNull().default(false),
+    canEdit: integer("can_edit", { mode: "boolean" }).notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [index("world_permissions_scope_idx").on(t.worldId, t.entityId), index("world_permissions_user_idx").on(t.userId)],
+);
+
+export type WorldRow = typeof worlds.$inferSelect;
+export type WorldEntityRow = typeof worldEntities.$inferSelect;
+export type WorldPermissionRow = typeof worldPermissions.$inferSelect;
+
 export type UserRow = typeof users.$inferSelect;
 export type CampaignRow = typeof campaigns.$inferSelect;
 export type BoardRow = typeof boards.$inferSelect;

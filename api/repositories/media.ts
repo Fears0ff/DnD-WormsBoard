@@ -6,6 +6,8 @@ import {
   compendiumItems,
   mediaAssets,
   tokens,
+  worldEntities,
+  worldEntityMaps,
   type MediaAssetRow,
 } from "../../db/schema";
 import type { MediaAssetDto } from "../../contracts/media";
@@ -70,7 +72,17 @@ export function countMediaReferences(db: Db, key: string): number {
     .from(characters)
     .where(eq(characters.portraitKey, key))
     .all().length;
-  return viaBoards + viaTokens + viaCompendium + viaCharacters;
+  const viaWorldEntities = db
+    .select({ id: worldEntities.id })
+    .from(worldEntities)
+    .where(eq(worldEntities.imageKey, key))
+    .all().length;
+  const viaWorldMaps = db
+    .select({ entityId: worldEntityMaps.entityId })
+    .from(worldEntityMaps)
+    .where(eq(worldEntityMaps.imageKey, key))
+    .all().length;
+  return viaBoards + viaTokens + viaCompendium + viaCharacters + viaWorldEntities + viaWorldMaps;
 }
 
 // Raw SQL is used for the NOT EXISTS anti-joins: Drizzle has no type-safe
@@ -80,6 +92,8 @@ const unreferencedSql = (keyColumn: typeof mediaAssets.key) => sql`
   AND NOT EXISTS (SELECT 1 FROM ${tokens} WHERE ${tokens.imageKey} = ${keyColumn})
   AND NOT EXISTS (SELECT 1 FROM ${compendiumItems} WHERE ${compendiumItems.imageKey} = ${keyColumn})
   AND NOT EXISTS (SELECT 1 FROM ${characters} WHERE ${characters.portraitKey} = ${keyColumn})
+  AND NOT EXISTS (SELECT 1 FROM ${worldEntities} WHERE ${worldEntities.imageKey} = ${keyColumn})
+  AND NOT EXISTS (SELECT 1 FROM ${worldEntityMaps} WHERE ${worldEntityMaps.imageKey} = ${keyColumn})
 `;
 
 /** Assets with no live references created before cutoffMs (orphan cleanup). */
@@ -105,6 +119,20 @@ export function deleteMediaAssetRowIfUnreferenced(db: Db, key: string): boolean 
     .where(and(eq(mediaAssets.key, key), unreferencedSql(mediaAssets.key)))
     .run();
   return Number(res.changes) > 0;
+}
+
+export function isWorldMediaVisible(db: Db, key: string, userId: number, isMaster: boolean): boolean {
+  if (isMaster) return true;
+  const direct = db.select().from(worldEntities).where(eq(worldEntities.imageKey, key)).all();
+  const maps = db.select({ entityId: worldEntityMaps.entityId }).from(worldEntityMaps)
+    .where(eq(worldEntityMaps.imageKey, key)).all();
+  const viaMaps = maps.flatMap((map) => {
+    const row = db.select().from(worldEntities).where(eq(worldEntities.id, map.entityId)).get();
+    return row ? [row] : [];
+  });
+  const references = [...direct, ...viaMaps];
+  if (references.length === 0) return true;
+  return references.some((row) => row.authorId === userId || (row.reviewStatus === "published" && row.visibility === "all"));
 }
 
 export function deleteMediaAssetRow(db: Db, key: string): void {
