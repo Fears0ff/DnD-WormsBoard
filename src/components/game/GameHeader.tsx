@@ -449,6 +449,7 @@ export interface GameHeaderProps {
   onOpenCompendium: () => void;
   onOpenCharacters: () => void;
   onOpenNotes: () => void;
+  onOpenWorlds: () => void;
 }
 
 export function GameHeader({
@@ -471,6 +472,7 @@ export function GameHeader({
   onOpenCompendium,
   onOpenCharacters,
   onOpenNotes,
+  onOpenWorlds,
 }: GameHeaderProps) {
   const logoutMutation = api.auth.logout.useMutation();
 
@@ -519,6 +521,7 @@ export function GameHeader({
           onOpenCompendium={onOpenCompendium}
           onOpenCharacters={onOpenCharacters}
           onOpenNotes={onOpenNotes}
+          onOpenWorlds={onOpenWorlds}
         />
 
         {isMaster ? (

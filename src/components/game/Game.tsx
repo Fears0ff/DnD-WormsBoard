@@ -22,6 +22,7 @@ import { InitiativePanel } from "./InitiativePanel";
 import { CharactersDialog } from "@/components/characters/CharactersDialog";
 import { NotesDialog } from "@/components/notes/NotesDialog";
 import { CompendiumDialog } from "@/components/compendium/CompendiumDialog";
+import { WorldsDialog } from "@/components/worlds/WorldsDialog";
 
 export function Game() {
   const [viewCampaignId, setViewCampaignId] = useState<number | undefined>(undefined);
@@ -39,6 +40,7 @@ export function Game() {
   const [compendiumOpen, setCompendiumOpen] = useState(false);
   const [charactersOpen, setCharactersOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [worldsOpen, setWorldsOpen] = useState(false);
 
   const moveMutation = api.tokens.move.useMutation();
   const updateMutation = api.tokens.update.useMutation();
@@ -165,6 +167,7 @@ export function Game() {
         onOpenCompendium={() => setCompendiumOpen(true)}
         onOpenCharacters={() => setCharactersOpen(true)}
         onOpenNotes={() => setNotesOpen(true)}
+        onOpenWorlds={() => setWorldsOpen(true)}
       />
 
       {wsStatus !== "open" ? (
@@ -350,6 +353,7 @@ export function Game() {
         characterCards={characterCardsQuery.data?.items ?? []}
       />
       <NotesDialog open={notesOpen} onOpenChange={setNotesOpen} />
+      <WorldsDialog open={worldsOpen} onOpenChange={setWorldsOpen} me={data.me} />
 
       {isMaster ? (
         <UsersDialog open={usersOpen} onOpenChange={setUsersOpen} me={data.me} />
