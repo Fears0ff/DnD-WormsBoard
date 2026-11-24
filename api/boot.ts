@@ -128,6 +128,7 @@ if (env.isProduction) {
   }, 60 * 60 * 1000);
   mediaCleanupTimer.unref();
 
-  const port = parseInt(process.env.PORT || "3000");
-  startHttpServer(app, port);
+  const port = Number.parseInt(process.env.PORT || "3000", 10);
+  const host = process.env.HOST || "0.0.0.0";
+  startHttpServer(app, port, host);
 }

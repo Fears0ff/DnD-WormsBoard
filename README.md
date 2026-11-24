@@ -38,17 +38,17 @@
 - автосохранение листов и заметок с задержкой 1,5 секунды, одним активным запросом, очередью изменений и `expectedVersion`; конфликт версий возвращает HTTP 409 и требует явного выбора пользователя;
 - Markdown-заметки приватны по умолчанию; владелец может дать read-only доступ нескольким пользователям, а preview очищается от опасного HTML.
 
-### Desktop и резервные копии
+### Хранение и резервные копии
 
-- Electron-оболочка с локальной SQLite БД, uploads, постоянным секретом сессий, tray, single instance и health gate `/api/health`;
+- SQLite, изображения и резервные копии хранятся в каталоге данных, отдельно от собранного сайта;
 - перед применением новых миграций создаётся согласованный снимок через `VACUUM INTO`;
 - сохраняются пять последних pre-migration backup-файлов;
-- Windows x64 собирается только нативно в GitHub Actions на `windows-latest`; Linux/Wine cross-build не используется.
+- один production-сервер обслуживает сайт, HTTP API и WebSocket.
 
 ## Требования
 
-- Node.js 22 для текущей разработки и desktop-сборки;
-- npm;
+- Node.js 22 и npm для обычного запуска на Windows или Linux;
+- Docker с Compose plugin для контейнерного запуска на сервере;
 - для E2E — Chromium. Используется системный `/usr/bin/chromium`, если доступен, иначе установите браузер командой `npx playwright install chromium`.
 
 ## Запуск для разработки
@@ -90,47 +90,54 @@ npm run dev
 
 Для platform preview/published runtime хранение, сервер и API-вызовы расходуют квоту владельца. Сайт будет тарифицироваться по фактически используемым облачным сервисам и API-вызовам; реальные списания доступны в настройках владельца. E2E всегда принудительно использует изолированное local-хранилище.
 
-## Production-сборка
+## Запуск сайта на Windows или Linux
+
+Команды одинаковые на обеих ОС. Сначала скопируйте `.env.example` в `.env` (в Windows это можно сделать через проводник или `Copy-Item .env.example .env`) и задайте собственный длинный случайный `APP_SECRET`.
 
 ```bash
-npm run check
+npm ci
 npm run build
 npm start
 ```
 
-Сборка создаёт:
+Сайт откроется на `http://localhost:3000`. Для доступа с других устройств используйте адрес компьютера в сети, например `http://192.168.1.10:3000`. Прослушиваемые адрес и порт задаются через `HOST` и `PORT`; по умолчанию используются `0.0.0.0` и `3000`.
 
-- `dist/public/` — клиент;
-- `dist/boot.js` — bundled HTTP/tRPC/WebSocket-сервер;
-- `dist/node_modules/` — минимальный platform-specific runtime нативного SQLite-драйвера.
+`npm start` сам устанавливает production-режим и не зависит от синтаксиса командной оболочки Windows или Linux. Миграции применяются автоматически. База, изображения и резервные копии сохраняются в `data/`; перед обновлением дополнительно скопируйте этот каталог.
 
-Нативный бинарник не переносится между ОС: production-сборку нужно выполнять на целевой платформе.
+Сборка создаёт `dist/public/` с клиентом, `dist/boot.js` с HTTP/tRPC/WebSocket-сервером и `dist/node_modules/` с нативным SQLite-драйвером. Нативный бинарник не переносится между ОС: при обычном запуске сборку выполняйте на целевой машине.
 
-## Windows desktop
+## Linux-сервер через Docker
 
-На нативной Windows-машине с Node.js 22:
+Установите Docker и Compose plugin, скопируйте `.env.example` в `.env`, замените `APP_SECRET` и запустите:
 
 ```bash
-npm ci
-npm run dist:win
-npm run smoke:desktop
+docker compose up -d --build
 ```
 
-GitHub workflow `.github/workflows/windows.yml` последовательно выполняет `npm ci`, typecheck, integration tests, desktop build с пересборкой `better-sqlite3` под ABI Electron, нативный smoke test и NSIS packaging. Готовый `DnD-WormsBoard-Setup-*.exe` публикуется как artifact `dnd-wormsboard-windows-x64`.
+Контейнер собирает сайт под Linux, запускает его от непривилегированного пользователя и проверяет `/api/health`. SQLite, изображения и резервные копии находятся в именованном томе `dnd-board-data`, поэтому пересборка контейнера не удаляет данные. Порт наружу публикуется как `3000:3000`.
 
-Desktop хранит БД, uploads, backups, секрет и логи в изолированном каталоге `userData`. При обновлении сначала сделайте отдельную копию этого каталога. Автообновление не реализовано. Самосборный установщик не имеет коммерческой цифровой подписи, поэтому Windows SmartScreen может показать предупреждение; запускайте только artifact из доверенного GitHub-репозитория после проверки его происхождения.
+Полезные команды:
+
+```bash
+docker compose ps
+docker compose logs -f
+docker compose up -d --build  # обновление после получения новой версии
+docker compose down           # остановка без удаления тома
+```
+
+Не используйте `docker compose down -v`: это удалит том с данными. Перед обновлением делайте отдельную копию тома или каталога данных. Для публичного адреса поставьте перед контейнером HTTPS reverse proxy и ограничьте доступ к порту 3000 снаружи.
 
 ## Проверки
 
 ```bash
-npm run check             # TypeScript клиента, сервера, контрактов и desktop
+npm run check             # TypeScript клиента, сервера и контрактов
 npm run test:integration # миграции, backup, auth, игра, media, компедиум, листы, заметки, WS
 npm run test:e2e         # production build + изолированные браузерные сеансы
 ```
 
 E2E-runner поднимает отдельный сервер на свободном порту 3100–3199, использует временные SQLite/uploads-каталоги и удаляет их после завершения. Пользовательская БД, рабочие uploads и порт preview 3000 не затрагиваются.
 
-Базовый GitHub Actions CI запускает typecheck, integration tests и production build. Отдельный native Windows workflow проверяет desktop и формирует установщик.
+Базовый GitHub Actions CI запускает typecheck, integration tests и production build. Основной сценарий поставки — сайт: обычный Node.js-запуск или Docker-контейнер.
 
 ## Архитектура
 
