@@ -43,7 +43,7 @@ describe("migration runner", () => {
     }
     expect(tables).not.toContain("tables"); // no such entity by design
 
-    expect(appliedVersions(testDb.db.$client)).toEqual(["0001", "0002", "0003", "0004", "0005"]);
+    expect(appliedVersions(testDb.db.$client)).toEqual(["0001", "0002", "0003", "0004", "0005", "0006"]);
 
     const meta = testDb.db.$client
       .prepare("SELECT game_revision, compendium_revision FROM app_meta WHERE id = 1")
@@ -60,7 +60,7 @@ describe("migration runner", () => {
   it("is idempotent: re-running migrations applies nothing", () => {
     const result = migrate(testDb.db.$client);
     expect(result.applied).toEqual([]);
-    expect(result.alreadyApplied).toEqual(["0001", "0002", "0003", "0004", "0005"]);
+    expect(result.alreadyApplied).toEqual(["0001", "0002", "0003", "0004", "0005", "0006"]);
   });
 
   it("upgrades a fixture database without losing existing data", () => {
@@ -91,9 +91,9 @@ describe("migration runner", () => {
 
       // Upgrade path: apply the remaining migrations.
       const result = migrate(sqlite);
-      expect(result.applied).toEqual(["0002", "0003", "0004", "0005"]);
+      expect(result.applied).toEqual(["0002", "0003", "0004", "0005", "0006"]);
       expect(result.alreadyApplied).toEqual(["0001"]);
-      expect(appliedVersions(sqlite)).toEqual(["0001", "0002", "0003", "0004", "0005"]);
+      expect(appliedVersions(sqlite)).toEqual(["0001", "0002", "0003", "0004", "0005", "0006"]);
 
       // Data survived the upgrade.
       const user = sqlite
