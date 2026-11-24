@@ -1,8 +1,14 @@
 node_modules
 dist
-.git
-.env
+release
 data
+.env
+.env.*
+!.env.example
+.git
+.github
 test-results
-*.swp
+playwright-report
+coverage
 *.log
+*.tsbuildinfo

@@ -1,0 +1,19 @@
+services:
+  dnd-board:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      SQLITE_PATH: /data/dnd-board.db
+      LOCAL_STORAGE_DIR: /data/uploads
+      DND_BACKUP_DIR: /data/backups
+    volumes:
+      - dnd-board-data:/data
+
+volumes:
+  dnd-board-data:

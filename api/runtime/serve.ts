@@ -20,8 +20,9 @@ export interface RunningServer {
 export function startHttpServer(
   app: Hono<{ Bindings: HttpBindings }>,
   port: number,
+  hostname = "0.0.0.0",
 ): RunningServer {
-  const server = serve({ fetch: app.fetch, port });
+  const server = serve({ fetch: app.fetch, port, hostname });
 
   const hub = createGameHub();
   registerHub(hub);
@@ -38,7 +39,8 @@ export function startHttpServer(
   const address = server.address();
   const boundPort =
     typeof address === "object" && address !== null ? address.port : port;
-  log.info(`Server running on http://localhost:${boundPort}/`);
+  const displayHost = hostname === "0.0.0.0" || hostname === "::" ? "localhost" : hostname;
+  log.info(`Server running on http://${displayHost}:${boundPort}/`);
 
   return {
     port: boundPort,
