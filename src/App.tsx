@@ -3,6 +3,8 @@ import { api, isUnauthorizedError, trpcErrorMessage } from "@/lib/api";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { Game } from "@/components/game/Game";
 import { FullScreenError, FullScreenLoader } from "@/components/game/FullScreenState";
+import { Navigate, Route, Routes } from "react-router";
+import { WorldsPage } from "@/components/worlds/WorldsPage";
 
 export default function App() {
   const me = api.auth.me.useQuery(undefined, {
@@ -25,7 +27,13 @@ export default function App() {
   } else if (me.isError || !me.data) {
     content = <AuthScreen />;
   } else {
-    content = <Game />;
+    content = (
+      <Routes>
+        <Route path="/table" element={<Game />} />
+        <Route path="/worlds" element={<WorldsPage me={me.data} />} />
+        <Route path="*" element={<Navigate to="/table" replace />} />
+      </Routes>
+    );
   }
 
   return (

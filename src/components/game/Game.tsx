@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import { BookOpen, EyeOff, Map as MapIcon, Minus, Pencil, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, invalidateGameState, trpcErrorCode, trpcErrorMessage } from "@/lib/api";
@@ -22,9 +23,9 @@ import { InitiativePanel } from "./InitiativePanel";
 import { CharactersDialog } from "@/components/characters/CharactersDialog";
 import { NotesDialog } from "@/components/notes/NotesDialog";
 import { CompendiumDialog } from "@/components/compendium/CompendiumDialog";
-import { WorldsDialog } from "@/components/worlds/WorldsDialog";
 
 export function Game() {
+  const navigate = useNavigate();
   const [viewCampaignId, setViewCampaignId] = useState<number | undefined>(undefined);
   const [viewBoardId, setViewBoardId] = useState<number | undefined>(undefined);
   const { query, wsStatus } = useGameSync(true, viewBoardId, viewCampaignId);
@@ -40,7 +41,6 @@ export function Game() {
   const [compendiumOpen, setCompendiumOpen] = useState(false);
   const [charactersOpen, setCharactersOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
-  const [worldsOpen, setWorldsOpen] = useState(false);
 
   const moveMutation = api.tokens.move.useMutation();
   const updateMutation = api.tokens.update.useMutation();
@@ -167,7 +167,7 @@ export function Game() {
         onOpenCompendium={() => setCompendiumOpen(true)}
         onOpenCharacters={() => setCharactersOpen(true)}
         onOpenNotes={() => setNotesOpen(true)}
-        onOpenWorlds={() => setWorldsOpen(true)}
+        onOpenWorlds={() => void navigate("/worlds")}
       />
 
       {wsStatus !== "open" ? (
@@ -353,7 +353,6 @@ export function Game() {
         characterCards={characterCardsQuery.data?.items ?? []}
       />
       <NotesDialog open={notesOpen} onOpenChange={setNotesOpen} />
-      <WorldsDialog open={worldsOpen} onOpenChange={setWorldsOpen} me={data.me} />
 
       {isMaster ? (
         <UsersDialog open={usersOpen} onOpenChange={setUsersOpen} me={data.me} />

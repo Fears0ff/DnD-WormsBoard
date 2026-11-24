@@ -65,7 +65,7 @@ export function WorldsDialog({ open, onOpenChange, me }: { open: boolean; onOpen
               <div className="space-y-1 pr-1">
                 {worlds.map((world) => (
                   <button key={world.id} type="button" onClick={() => setSelectedId(world.id)}
-                    className={`ui-hover w-full rounded-md border px-2 py-2 text-left ${world.id === selectedId ? "border-primary bg-accent" : "border-transparent hover:bg-accent/50"}`}>
+                    className={`ui-hover w-full rounded-md border px-2 py-2 text-left ${world.id === activeSelectedId ? "border-primary bg-accent" : "border-transparent hover:bg-accent/50"}`}>
                     <span className="flex items-center gap-1.5 text-xs font-medium"><span className="truncate">{world.name}</span>{world.isPrimary ? <Badge className="hidden px-1 text-[9px] md:inline-flex">основной</Badge> : null}</span>
                     <span className="mt-1 hidden truncate text-[10px] text-muted-foreground md:block">{world.comment || world.chronologyName}</span>
                     {world.reviewCount > 0 && me.gameRole === "master" ? <Badge variant="secondary" className="mt-1 text-[9px]">Ревью: {world.reviewCount}</Badge> : null}

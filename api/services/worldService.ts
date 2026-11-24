@@ -451,7 +451,7 @@ interface WikiData {
 }
 
 function parseAssignedJson(source: string, variable: string): unknown {
-  const match = source.match(new RegExp(`window\\.${variable}\\s*=\\s*([\\s\\S]*?);?\\s*$`));
+  const match = source.match(new RegExp(`window\\.${variable}\\s*=\\s*([\\s\\S]*?);?\\s*(?:window\\.|$)`));
   if (!match?.[1]) throw new TRPCError({ code: "BAD_REQUEST", message: `Не найден объект window.${variable}` });
   try { return JSON.parse(match[1].replace(/;\s*$/, "")); }
   catch { throw new TRPCError({ code: "BAD_REQUEST", message: `Файл ${variable} содержит неверный JSON` }); }
@@ -485,11 +485,19 @@ export async function importWorldWiki(
   }
   const data = requireWikiData(parseAssignedJson(input.dataJs, "WIKI_DATA"));
   const paths = parseAssignedJson(input.imagePathsJs, "IMAGE_PATHS") as Record<string, Record<string, string>>;
+  const mapPaths = input.imagePathsJs.includes("IMAGE_MAP_PATHS")
+    ? parseAssignedJson(input.imagePathsJs, "IMAGE_MAP_PATHS") as Record<string, Record<string, string[]>>
+    : {};
   const supplied = new Map(input.images.map((image) => [image.path, image.dataBase64]));
   const uploaded = new Map<string, string>();
   const referenced = new Set<string>();
   for (const group of Object.values(paths)) {
     if (group && typeof group === "object") for (const path of Object.values(group)) if (typeof path === "string") referenced.add(path);
+  }
+  for (const group of Object.values(mapPaths)) {
+    if (group && typeof group === "object") for (const paths of Object.values(group)) {
+      if (Array.isArray(paths)) for (const path of paths) if (typeof path === "string") referenced.add(path);
+    }
   }
   for (const path of referenced) {
     const dataBase64 = supplied.get(path);
@@ -515,7 +523,7 @@ export async function importWorldWiki(
         if (parentOldId && parentId === undefined) {
           throw new TRPCError({ code: "BAD_REQUEST", message: `Не найдена родительская запись для «${item.name ?? item.title}»` });
         }
-        if (["region", "city", "place"].includes(type) && parentId === undefined) {
+        if (["region", "place"].includes(type) && parentId === undefined) {
           throw new TRPCError({ code: "BAD_REQUEST", message: `Не указана родительская локация для «${item.name ?? item.title}»` });
         }
         const factionId = item.faction ? ids.get(item.faction) : undefined;
@@ -527,6 +535,10 @@ export async function importWorldWiki(
           throw new TRPCError({ code: "BAD_REQUEST", message: `Не найден участник события «${item.name ?? item.title}»` });
         }
         const imagePath = paths[type]?.[item.id];
+        const mapKeys = (mapPaths[type]?.[item.id] ?? [])
+          .map((path) => uploaded.get(path))
+          .filter((key): key is string => Boolean(key))
+          .slice(0, 3);
         const row = insertWorldEntity(tx, {
           worldId: input.worldId,
           type,
@@ -548,6 +560,7 @@ export async function importWorldWiki(
         });
         ids.set(item.id, row.id);
         imported[key] += 1;
+        if (mapKeys.length) replaceMapKeys(tx, row.id, mapKeys);
         if (eventCharacterIds?.length) {
           replaceEventCharacters(tx, row.id, eventCharacterIds as number[]);
         }

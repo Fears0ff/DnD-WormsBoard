@@ -4,7 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  release:
+    types: [published]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   native-windows:
@@ -26,3 +31,8 @@ jobs:
           name: dnd-wormsboard-windows-x64
           path: release/DnD-WormsBoard-Setup-*.exe
           if-no-files-found: error
+      - name: Upload installer to GitHub Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" release/DnD-WormsBoard-Setup-*.exe --clobber
