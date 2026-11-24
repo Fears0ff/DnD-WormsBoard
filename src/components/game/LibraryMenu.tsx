@@ -1,4 +1,4 @@
-import { BookOpen, ChevronDown, NotebookPen, ScrollText, UserRound } from "lucide-react";
+import { BookOpen, ChevronDown, Globe2, NotebookPen, ScrollText, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,10 +11,12 @@ export function LibraryMenu({
   onOpenCompendium,
   onOpenCharacters,
   onOpenNotes,
+  onOpenWorlds,
 }: {
   onOpenCompendium: () => void;
   onOpenCharacters: () => void;
   onOpenNotes: () => void;
+  onOpenWorlds: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -32,6 +34,10 @@ export function LibraryMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem className="ui-hover gap-2 text-xs" onSelect={onOpenWorlds}>
+          <Globe2 className="size-3.5 text-primary" />
+          Миры
+        </DropdownMenuItem>
         <DropdownMenuItem className="ui-hover gap-2 text-xs" onSelect={onOpenCompendium}>
           <ScrollText className="size-3.5 text-primary" />
           Компедиум

@@ -12,6 +12,7 @@ import { charactersRouter } from "./routers/characters";
 import { notesRouter } from "./routers/notes";
 import { mediaRouter } from "./routers/media";
 import { compendiumRouter } from "./routers/compendium";
+import { worldsRouter } from "./routers/worlds";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),
@@ -26,6 +27,7 @@ export const appRouter = createRouter({
   notes: notesRouter,
   media: mediaRouter,
   compendium: compendiumRouter,
+  worlds: worldsRouter,
 });
 
 export type AppRouter = typeof appRouter;

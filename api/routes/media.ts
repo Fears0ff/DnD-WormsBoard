@@ -31,7 +31,7 @@ export async function handleBoardImage(c: Context): Promise<Response> {
 
   const key = c.req.query("key") ?? "";
   try {
-    const image = await readBoardImage(getDb(), key);
+    const image = await readBoardImage(getDb(), key, user);
     // Uint8Array is a valid Response body at runtime (undici); the cast mirrors
     // api/lib/storage.ts, where DOM-vs-undici BufferSource types disagree.
     return new Response(image.bytes as unknown as NonNullable<RequestInit["body"]>, {
