@@ -5,6 +5,7 @@ import { Game } from "@/components/game/Game";
 import { FullScreenError, FullScreenLoader } from "@/components/game/FullScreenState";
 import { Navigate, Route, Routes } from "react-router";
 import { WorldsPage } from "@/components/worlds/WorldsPage";
+import { HomePage } from "@/components/HomePage";
 
 export default function App() {
   const me = api.auth.me.useQuery(undefined, {
@@ -29,9 +30,10 @@ export default function App() {
   } else {
     content = (
       <Routes>
+        <Route path="/" element={<HomePage />} />
         <Route path="/table" element={<Game />} />
         <Route path="/worlds" element={<WorldsPage me={me.data} />} />
-        <Route path="*" element={<Navigate to="/table" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { useNavigate } from "react-router";
 import { LogIn, UserPlus, Loader2 } from "lucide-react";
 import { api, invalidateAuth, trpcErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BrandMark } from "@/components/game/FullScreenState";
 
 export function AuthScreen() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<"login" | "register">("login");
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -21,6 +23,7 @@ export function AuthScreen() {
 
   const onSuccess = () => {
     setError(null);
+    navigate("/");
     invalidateAuth();
   };
 

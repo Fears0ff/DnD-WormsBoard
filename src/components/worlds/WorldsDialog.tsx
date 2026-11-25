@@ -87,7 +87,7 @@ export function WorldsDialog({ open, onOpenChange, me }: { open: boolean; onOpen
   );
 }
 
-function WorldFormDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (open: boolean) => void; onCreated: (id: number) => void }) {
+export function WorldFormDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (open: boolean) => void; onCreated: (id: number) => void }) {
   const create = trpc.worlds.create.useMutation();
   const [name, setName] = useState("");
   const [comment, setComment] = useState("");
@@ -207,7 +207,7 @@ function EntityRow({ entity, selected, onSelect }: { entity: WorldEntityDto; sel
   </button>;
 }
 
-function EntityDetails({ snapshot, entity, me, onSelect, onEdit, onDeleted }: { snapshot: WorldSnapshotDto; entity: WorldEntityDto; me: UserDto; onSelect: (id: number) => void; onEdit: () => void; onDeleted: () => void }) {
+export function EntityDetails({ snapshot, entity, me, onSelect, onEdit, onDeleted }: { snapshot: WorldSnapshotDto; entity: WorldEntityDto; me: UserDto; onSelect: (id: number) => void; onEdit: () => void; onDeleted: () => void }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [visibility, setVisibility] = useState<"all" | "master">(entity.visibility);
@@ -243,7 +243,7 @@ function RejectDialog({ open, onOpenChange, entityId }: { open: boolean; onOpenC
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle className="text-sm">Отклонить запись</DialogTitle><DialogDescription className="text-xs">Автор увидит комментарий и сможет доработать запись.</DialogDescription></DialogHeader><Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Что нужно исправить?" /><DialogFooter><Button variant="destructive" disabled={!comment.trim() || reject.isPending} onClick={() => reject.mutate({ id: entityId, comment }, { onSuccess: () => { invalidateWorlds(); onOpenChange(false); setComment(""); }, onError: (error) => toast.error(trpcErrorMessage(error, "Не удалось отклонить запись")) })}>Отклонить</Button></DialogFooter></DialogContent></Dialog>;
 }
 
-function WorldSettingsDialog({ open, onOpenChange, world }: { open: boolean; onOpenChange: (open: boolean) => void; world: WorldDto }) {
+export function WorldSettingsDialog({ open, onOpenChange, world }: { open: boolean; onOpenChange: (open: boolean) => void; world: WorldDto }) {
   const [name, setName] = useState(world.name); const [comment, setComment] = useState(world.comment); const [chronologyName, setChronologyName] = useState(world.chronologyName); const [zeroYearName, setZeroYearName] = useState(world.zeroYearName);
   const update = trpc.worlds.update.useMutation(); const remove = trpc.worlds.remove.useMutation();
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle className="text-sm">Настройки мира</DialogTitle></DialogHeader><div className="space-y-3"><Field label="Название"><Input value={name} onChange={(e) => setName(e.target.value)} /></Field><Field label="Комментарий"><Input value={comment} onChange={(e) => setComment(e.target.value)} /></Field><Field label="Хронология"><Input value={chronologyName} onChange={(e) => setChronologyName(e.target.value)} /></Field><Field label="Нулевой год"><Input value={zeroYearName} onChange={(e) => setZeroYearName(e.target.value)} /></Field></div><DialogFooter className="flex justify-between">{!world.isPrimary ? <Button variant="destructive" size="sm" onClick={() => { if (window.confirm(`Удалить мир «${world.name}» и все его записи?`)) remove.mutate({ id: world.id }, { onSuccess: () => { invalidateWorlds(); onOpenChange(false); }, onError: (error) => toast.error(trpcErrorMessage(error, "Не удалось удалить мир")) }); }}>Удалить мир</Button> : <span />}<Button size="sm" disabled={update.isPending} onClick={() => update.mutate({ id: world.id, name, comment, chronologyName, zeroYearName }, { onSuccess: () => { invalidateWorlds(); onOpenChange(false); }, onError: (error) => toast.error(trpcErrorMessage(error, "Не удалось сохранить мир")) })}>Сохранить</Button></DialogFooter></DialogContent></Dialog>;

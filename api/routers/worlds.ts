@@ -12,6 +12,7 @@ import {
   worldWikiImportInputSchema,
 } from "../../contracts/worlds";
 import { getDb } from "../../db/connection";
+import { ensureBundledWorld } from "../services/defaultWorldService";
 import {
   approveWorldEntity,
   createWorld,
@@ -30,6 +31,7 @@ import {
 } from "../services/worldService";
 
 export const worldsRouter = createRouter({
+  initialize: masterProcedure.mutation(({ ctx }) => ensureBundledWorld(getDb(), ctx.user)),
   list: authedProcedure.query(({ ctx }) => listWorlds(getDb(), ctx.user)),
   get: authedProcedure.input(worldIdInputSchema).query(({ ctx, input }) => getWorld(getDb(), ctx.user, input.id)),
   create: masterProcedure.input(worldCreateInputSchema).mutation(({ ctx, input }) => createWorld(getDb(), ctx.user, input)),

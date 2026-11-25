@@ -21,6 +21,20 @@ afterEach(() => {
 });
 
 describe("bundled world wiki", () => {
+  it("creates and fills the primary world automatically", async () => {
+    const master = await registerUser("auto-master");
+    const session = await newContext(master.cookie);
+
+    const world = await session.caller.worlds.initialize();
+    const snapshot = await session.caller.worlds.get({ id: world.id });
+
+    expect(world.name).toBe("Прайм");
+    expect(world.isPrimary).toBe(true);
+    expect(snapshot.entities).toHaveLength(492);
+    expect((await session.caller.worlds.initialize()).id).toBe(world.id);
+    expect((await session.caller.worlds.get({ id: world.id })).entities).toHaveLength(492);
+  }, 30_000);
+
   it("imports every supplied record and image into an empty world", async () => {
     const master = await registerUser("master");
     const session = await newContext(master.cookie);
